@@ -29,6 +29,7 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.xml.parsers.ParserConfigurationException;
@@ -47,23 +48,35 @@ public final class PalantirJavaFormatIdeaPlugin implements Plugin<Project> {
                 "May only apply com.palantir.java-format-idea to the root project");
 
         rootProject.getPlugins().apply(PalantirJavaFormatProviderPlugin.class);
-
         rootProject.getPluginManager().withPlugin("idea", ideaPlugin -> {
             Configuration implConfiguration =
                     rootProject.getConfigurations().getByName(PalantirJavaFormatProviderPlugin.CONFIGURATION_NAME);
 
-            configureLegacyIdea(rootProject, implConfiguration);
-            configureIntelliJImport(rootProject, implConfiguration);
+            Optional<Configuration> nativeImplConfiguration = maybeGetNativeImplConfiguration(rootProject);
+
+            configureLegacyIdea(rootProject, implConfiguration, nativeImplConfiguration);
+            configureIntelliJImport(rootProject, implConfiguration, nativeImplConfiguration);
         });
     }
 
-    private static void configureLegacyIdea(Project project, Configuration implConfiguration) {
+    private static Optional<Configuration> maybeGetNativeImplConfiguration(Project rootProject) {
+        return NativeImageFormatProviderPlugin.shouldUseNativeImage(rootProject)
+                ? Optional.of(rootProject
+                        .getConfigurations()
+                        .getByName(NativeImageFormatProviderPlugin.NATIVE_CONFIGURATION_NAME))
+                : Optional.empty();
+    }
+
+    private static void configureLegacyIdea(
+            Project project, Configuration implConfiguration, Optional<Configuration> nativeImplConfiguration) {
         IdeaModel ideaModel = project.getExtensions().getByType(IdeaModel.class);
         ideaModel.getProject().getIpr().withXml(xmlProvider -> {
             // this block is lazy
             List<URI> uris =
                     implConfiguration.getFiles().stream().map(File::toURI).collect(Collectors.toList());
-            ConfigureJavaFormatterXml.configureJavaFormat(xmlProvider.asNode(), uris);
+            Optional<URI> nativeUri =
+                    nativeImplConfiguration.map(conf -> conf.getSingleFile().toURI());
+            ConfigureJavaFormatterXml.configureJavaFormat(xmlProvider.asNode(), uris, nativeUri);
             ConfigureJavaFormatterXml.configureExternalDependencies(xmlProvider.asNode());
         });
 
@@ -72,7 +85,8 @@ public final class PalantirJavaFormatIdeaPlugin implements Plugin<Project> {
         });
     }
 
-    private static void configureIntelliJImport(Project project, Configuration implConfiguration) {
+    private static void configureIntelliJImport(
+            Project project, Configuration implConfiguration, Optional<Configuration> nativeImplConfiguration) {
         // Note: we tried using 'org.jetbrains.gradle.plugin.idea-ext' and afterSync triggers, but these are currently
         // very hard to manage as the tasks feel disconnected from the Sync operation, and you can't remove them once
         // you've added them. For that reason, we accept that we have to resolve this configuration at
@@ -84,9 +98,12 @@ public final class PalantirJavaFormatIdeaPlugin implements Plugin<Project> {
             List<URI> uris =
                     implConfiguration.getFiles().stream().map(File::toURI).collect(Collectors.toList());
 
+            Optional<URI> nativeImageUri =
+                    nativeImplConfiguration.map(conf -> conf.getSingleFile().toURI());
+
             createOrUpdateIdeaXmlFile(
                     project.file(".idea/palantir-java-format.xml"),
-                    node -> ConfigureJavaFormatterXml.configureJavaFormat(node, uris));
+                    node -> ConfigureJavaFormatterXml.configureJavaFormat(node, uris, nativeImageUri));
             createOrUpdateIdeaXmlFile(
                     project.file(".idea/externalDependencies.xml"),
                     node -> ConfigureJavaFormatterXml.configureExternalDependencies(node));
@@ -95,7 +112,7 @@ public final class PalantirJavaFormatIdeaPlugin implements Plugin<Project> {
 
             // Still configure legacy idea if using intellij import
             updateIdeaXmlFileIfExists(project.file(project.getName() + ".ipr"), node -> {
-                ConfigureJavaFormatterXml.configureJavaFormat(node, uris);
+                ConfigureJavaFormatterXml.configureJavaFormat(node, uris, nativeImageUri);
                 ConfigureJavaFormatterXml.configureExternalDependencies(node);
             });
             updateIdeaXmlFileIfExists(project.file(project.getName() + ".iws"), node -> {

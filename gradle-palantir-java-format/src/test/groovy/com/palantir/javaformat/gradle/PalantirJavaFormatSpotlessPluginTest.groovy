@@ -16,12 +16,18 @@
 package com.palantir.javaformat.gradle
 
 import nebula.test.IntegrationTestKitSpec
+import spock.lang.Unroll
 
 class PalantirJavaFormatSpotlessPluginTest extends IntegrationTestKitSpec {
     /** ./gradlew writeImplClasspath generates this file. */
     private static final CLASSPATH_FILE = new File("build/impl.classpath").absolutePath
+    private static final NATIVE_IMAGE_FILE = new File("build/nativeImage.path")
+    private static final NATIVE_CONFIG = String.format("palantirJavaFormatNative files(\"%s\")", NATIVE_IMAGE_FILE.text)
 
-    void setup() {
+
+    @Unroll
+    def "formats with spotless when spotless is applied"(String extraGradleProperties, String expectedOutput) {
+        def extraDependencies = extraGradleProperties.isEmpty() ? "" : NATIVE_CONFIG
         buildFile << """
             // The 'com.diffplug.spotless:spotless-plugin-gradle' dependency is already added by palantir-java-format
             plugins {
@@ -31,8 +37,9 @@ class PalantirJavaFormatSpotlessPluginTest extends IntegrationTestKitSpec {
             
             dependencies {
                 palantirJavaFormat files(file("${CLASSPATH_FILE}").text.split(':'))
+                EXTRA_CONFIGURATION
             }
-        """.stripIndent()
+        """.replace("EXTRA_CONFIGURATION", extraDependencies).stripIndent()
 
         // Add jvm args to allow spotless and formatter gradle plugins to run with Java 16+
         file('gradle.properties') << """
@@ -42,9 +49,8 @@ class PalantirJavaFormatSpotlessPluginTest extends IntegrationTestKitSpec {
           --add-exports jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED \
           --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
         """.stripIndent()
-    }
+        file('gradle.properties') << extraGradleProperties
 
-    def "formats with spotless when spotless is applied"() {
         buildFile << """
             apply plugin: 'com.diffplug.spotless'
         """.stripIndent()
@@ -52,10 +58,17 @@ class PalantirJavaFormatSpotlessPluginTest extends IntegrationTestKitSpec {
         file('src/main/java/Main.java').text = invalidJavaFile
 
         when:
-        runTasks('spotlessApply')
+        def result = runTasks('spotlessApply', '--info')
 
         then:
+        result.output.contains(expectedOutput)
         file('src/main/java/Main.java').text == validJavaFile
+
+        where:
+        extraGradleProperties   | expectedOutput
+        "" | "Using the legacy palantir-java-formatter"
+        "palantir.native.formatter=true"  | "Using the native-image"
+
     }
 
     def validJavaFile = '''\

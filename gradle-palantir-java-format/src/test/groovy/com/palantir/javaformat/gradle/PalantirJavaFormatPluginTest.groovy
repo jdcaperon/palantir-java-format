@@ -17,13 +17,19 @@
 package com.palantir.javaformat.gradle
 
 import nebula.test.IntegrationTestKitSpec
+import spock.lang.Unroll
 
 class PalantirJavaFormatPluginTest extends IntegrationTestKitSpec {
 
     /** ./gradlew writeImplClasspath generates this file. */
     private static final CLASSPATH_FILE = new File("build/impl.classpath").absolutePath
+    private static final NATIVE_IMAGE_FILE = new File("build/nativeImage.path").absolutePath
+    private static final NATIVE_CONFIG = "palantirJavaFormatNative files(file(\"${NATIVE_IMAGE_FILE}\").text)"
 
-    void setup() {
+    @Unroll
+    def 'formatDiff updates only lines changed in git diff'(String extraGradleProperties, String expectedOutput) {
+        file('gradle.properties') << extraGradleProperties
+        def extraDependencies = extraGradleProperties.isEmpty() ? "" : NATIVE_CONFIG
         buildFile << """
             plugins {
                 id 'java'
@@ -32,9 +38,10 @@ class PalantirJavaFormatPluginTest extends IntegrationTestKitSpec {
             
             dependencies {
                 palantirJavaFormat files(file("${CLASSPATH_FILE}").text.split(':'))
+                EXTRA_CONFIGURATION
             }
             apply plugin: 'idea'
-        """.stripIndent()
+        """.replace("EXTRA_CONFIGURATION", extraDependencies).stripIndent()
 
         // Add jvm args to allow spotless and formatter gradle plugins to run with Java 16+
         file('gradle.properties') << """
@@ -44,10 +51,7 @@ class PalantirJavaFormatPluginTest extends IntegrationTestKitSpec {
           --add-exports jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED \
           --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
         """.stripIndent()
-    }
 
-    def 'formatDiff updates only lines changed in git diff'() {
-        when:
         "git init".execute(Collections.emptyList(), projectDir).waitFor()
         "git config user.name Foo".execute(Collections.emptyList(), projectDir).waitFor()
         "git config user.email foo@bar.com".execute(Collections.emptyList(), projectDir).waitFor()
@@ -71,8 +75,11 @@ class PalantirJavaFormatPluginTest extends IntegrationTestKitSpec {
         }
         '''.stripIndent()
 
+        when:
+        def result = runTasks('formatDiff', '--info')
+
         then:
-        runTasks('formatDiff')
+        result.output.contains(expectedOutput)
         file('src/main/java/Main.java').text == '''
         class Main {
             public static void crazyExistingFormatting  (  String... args) {
@@ -80,5 +87,10 @@ class PalantirJavaFormatPluginTest extends IntegrationTestKitSpec {
             }
         }
         '''.stripIndent()
+
+        where:
+        extraGradleProperties    | expectedOutput
+        ""                          | "Using legacy java formatter"
+        "palantir.native.formatter=true"  | "Using the native-image to format"
     }
 }

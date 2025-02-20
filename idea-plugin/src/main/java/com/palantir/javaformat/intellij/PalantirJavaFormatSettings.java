@@ -38,7 +38,7 @@ import javax.annotation.Nullable;
 @State(
         name = "PalantirJavaFormatSettings",
         storages = {@Storage("palantir-java-format.xml")})
-class PalantirJavaFormatSettings implements PersistentStateComponent<PalantirJavaFormatSettings.State> {
+public class PalantirJavaFormatSettings implements PersistentStateComponent<PalantirJavaFormatSettings.State> {
 
     @SuppressWarnings("for-rollout:SameNameButDifferent")
     private State state = new State();
@@ -91,6 +91,13 @@ class PalantirJavaFormatSettings implements PersistentStateComponent<PalantirJav
         return state.implementationClassPath;
     }
 
+    /**
+     * The path to the formatter nativeImage.
+     */
+    Optional<URI> getNativeImageClassPath() {
+        return state.nativeImageClassPath;
+    }
+
     boolean injectedVersionIsOutdated() {
         Optional<String> formatterVersion = computeFormatterVersion();
         Optional<OrderableSlsVersion> implementationVersion = OrderableSlsVersion.safeValueOf(
@@ -139,6 +146,7 @@ class PalantirJavaFormatSettings implements PersistentStateComponent<PalantirJav
 
         private EnabledState enabled = EnabledState.UNKNOWN;
         private Optional<List<URI>> implementationClassPath = Optional.empty();
+        private Optional<URI> nativeImageClassPath = Optional.empty();
 
         public JavaFormatterOptions.Style style = JavaFormatterOptions.Style.PALANTIR;
 
@@ -152,6 +160,14 @@ class PalantirJavaFormatSettings implements PersistentStateComponent<PalantirJav
             return implementationClassPath
                     .map(paths -> paths.stream().map(URI::toString).collect(Collectors.toList()))
                     .orElse(null);
+        }
+
+        public void setNativeImageClassPath(@Nullable String value) {
+            nativeImageClassPath = Optional.ofNullable(value).map(URI::create);
+        }
+
+        public String getNativeImageClassPath() {
+            return nativeImageClassPath.map(URI::toString).orElse(null);
         }
 
         // enabled used to be a boolean so we use bean property methods for backwards compatibility
@@ -182,8 +198,10 @@ class PalantirJavaFormatSettings implements PersistentStateComponent<PalantirJav
             return "PalantirJavaFormatSettings{"
                     + "enabled="
                     + enabled
-                    + ", formatterPath="
+                    + ", implementationClassPath="
                     + implementationClassPath
+                    + ", nativeImageClassPath="
+                    + nativeImageClassPath
                     + ", style="
                     + style
                     + '}';
