@@ -29,6 +29,7 @@ apply plugin: 'com.palantir.git-version'
 apply plugin: 'com.palantir.jdks'
 apply plugin: 'com.palantir.jdks.latest'
 apply plugin: 'com.palantir.baseline'
+apply plugin: 'com.palantir.baseline-java-versions'
 apply plugin: 'com.palantir.consistent-versions'
 apply plugin: 'com.palantir.baseline-java-versions'
 
@@ -68,6 +69,7 @@ subprojects {
 
 javaVersions {
     libraryTarget = 17
+    runtime = 21
 }
 
 jdks {

@@ -60,3 +60,7 @@ tasks.named("test") {
     // https://junit.org/junit5/docs/current/user-guide/#writing-tests-parallel-execution
     systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
 }
+
+javaVersion {
+    target = 21
+}
