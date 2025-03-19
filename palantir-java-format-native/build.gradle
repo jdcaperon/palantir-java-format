@@ -56,8 +56,7 @@ graalvmNative {
             configurationFileDirectories.from(file('src/main/resources/META-INF/native-image'))
             buildArgs.addAll(
                     '-H:+UnlockExperimentalVMOptions',
-                    '-H:IncludeResourceBundles=com.sun.tools.javac.resources.compiler',
-                    '-H:IncludeResourceBundles=com.sun.tools.javac.resources.javac',
+                    '-H:+IncludeAllLocales',
                     '--no-fallback',
                     '--initialize-at-build-time=com.sun.tools.javac.file.Locations',
                     '-H:+ReportExceptionStackTraces',
@@ -67,12 +66,6 @@ graalvmNative {
             jvmArgs.addAll(jvmArgList)
         }
     }
-}
-
-
-// The image requires parameters to be passed to; eg. gw nativeRun -Pargs=--palantir,-i,<file>
-tasks.named("nativeRun", org.graalvm.buildtools.gradle.tasks.NativeRunTask) {
-    runtimeArgs.addAll(project.hasProperty('appArgs') ? project.appArgs.split(',') : [])
 }
 
 if (Optional.ofNullable(System.getenv("CI")).isPresent()) {
