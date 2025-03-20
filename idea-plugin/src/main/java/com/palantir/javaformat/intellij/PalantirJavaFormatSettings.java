@@ -16,7 +16,6 @@
 
 package com.palantir.javaformat.intellij;
 
-import com.google.common.base.Strings;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.components.State;
@@ -112,8 +111,7 @@ public class PalantirJavaFormatSettings implements PersistentStateComponent<Pala
     }
 
     Optional<String> getImplementationVersion() {
-        return Optional.ofNullable(Strings.emptyToNull(
-                PalantirJavaFormatConfigurable.class.getPackage().getImplementationVersion()));
+        return Optional.ofNullable(FormatterProvider.getPluginDescriptor().getVersion());
     }
 
     Optional<String> computeFormatterVersion() {
