@@ -17,6 +17,7 @@ package com.palantir.javaformat.java;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -46,6 +47,26 @@ public class StringWrapperTest {
                 "}");
 
         assertThat(StringWrapper.wrap(100, input, Formatter.create())).isEqualTo(output);
+    }
+
+    @Test
+    public void textBlock() throws Exception {
+        Assumptions.assumeTrue(Formatter.getRuntimeVersion() >= 15);
+        String input =
+                lines(
+                        "package com.mypackage;",
+                        "public class ReproBug {",
+                        "    private String myString;",
+                        "    private ReproBug() {",
+                        "        String str =",
+                        "                \"\"\"",
+                        "               "
+                                + " {\"sourceEndpoint\":\"ri.something.1-1.object-internal.1\",\"targetEndpoint\":\"ri.some"
+                                + "thing.1-1.object-internal.2\",\"typeId\":\"typeId\"}\"\"\";",
+                        "        myString = str;",
+                        "    }",
+                        "}");
+        assertThat(StringWrapper.wrap(100, input, Formatter.create())).isEqualTo(input);
     }
 
     private static String lines(String... line) {

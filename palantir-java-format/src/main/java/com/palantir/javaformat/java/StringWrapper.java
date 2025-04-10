@@ -127,6 +127,10 @@ public final class StringWrapper {
                 if (literalTree.getKind() != Kind.STRING_LITERAL) {
                     return null;
                 }
+                int pos = getStartPosition(literalTree);
+                if (input.substring(pos, Math.min(input.length(), pos + 3)).equals("\"\"\"")) {
+                    return null;
+                }
                 Tree parent = getCurrentPath().getParentPath().getLeaf();
                 if (parent instanceof MemberSelectTree
                         && ((MemberSelectTree) parent).getExpression().equals(literalTree)) {
@@ -264,7 +268,7 @@ public final class StringWrapper {
      * @param first0 true if the text includes the beginning of its enclosing concat chain, i.e. a
      * @param textStartColumn the column position of the beginning of the original text
      * @param firstLineStartColumn the column where the very first line starts (can be less than textStartColumn if text
-     *     follows variable declaration)
+     * follows variable declaration)
      */
     private static String reflow(
             String separator,
@@ -415,5 +419,6 @@ public final class StringWrapper {
         return sb.toString();
     }
 
-    private StringWrapper() {}
+    private StringWrapper() {
+    }
 }
