@@ -1,0 +1,7 @@
+public class Test {
+    public void doSomething() {
+        var string =
+                """
+                aaaaaaaaaaaaaaa bbbbbbbbbbbbbbbbbb cccccccccccccccc ddddddddddddddddd eeeeeeeeeeeeeeeeee fffffffffffffffff""";
+    }
+}

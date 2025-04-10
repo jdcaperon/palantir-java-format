@@ -3,4 +3,10 @@ class RSLs {
     lorem
       ipsum
     """;
+    String t =
+            """
+        lorem
+          ipsum
+                                                                                                                        dolor
+        """;
 }
