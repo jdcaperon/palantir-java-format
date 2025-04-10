@@ -48,6 +48,25 @@ public class StringWrapperTest {
         assertThat(StringWrapper.wrap(100, input, Formatter.create())).isEqualTo(output);
     }
 
+    @Test
+    public void textBlock() throws Exception {
+        String input =
+                lines(
+                        "package com.mypackage;",
+                        "public class ReproBug {",
+                        "    private String myString;",
+                        "    private ReproBug() {",
+                        "        String str =",
+                        "                \"\"\"",
+                        "               "
+                                + " {\"sourceEndpoint\":\"ri.something.1-1.object-internal.1\",\"targetEndpoint\":\"ri.some"
+                                + "thing.1-1.object-internal.2\",\"typeId\":\"typeId\"}\"\"\";",
+                        "        myString = str;",
+                        "    }",
+                        "}");
+        assertThat(StringWrapper.wrap(100, input, Formatter.create())).isEqualTo(input);
+    }
+
     private static String lines(String... line) {
         return Joiner.on('\n').join(line) + '\n';
     }

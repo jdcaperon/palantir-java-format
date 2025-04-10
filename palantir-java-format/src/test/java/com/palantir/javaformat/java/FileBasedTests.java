@@ -50,7 +50,14 @@ public final class FileBasedTests {
                     .putAll(15, "I603")
                     .putAll(16, "I588")
                     .putAll(17, "I683", "I684", "I696")
-                    .putAll(21, "SwitchGuardClause", "SwitchRecord", "SwitchDouble", "SwitchUnderscore", "I880")
+                    .putAll(
+                            21,
+                            "SwitchGuardClause",
+                            "SwitchRecord",
+                            "SwitchDouble",
+                            "SwitchUnderscore",
+                            "I880",
+                            "text-block")
                     .build();
 
     private final Class<?> testClass;
@@ -121,7 +128,7 @@ public final class FileBasedTests {
                 assertThat(outputs).describedAs("unmatched input").containsKey(fileName);
                 expectedOutput = outputs.get(fileName);
             }
-            testInputs.add(new Object[] {fileName, input, expectedOutput});
+            testInputs.add(new Object[]{fileName, input, expectedOutput});
         }
         return testInputs;
     }
